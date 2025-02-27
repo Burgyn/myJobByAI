@@ -1,9 +1,20 @@
-import { Component, OnInit } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ViewChild,
+  ElementRef,
+  AfterViewInit,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PayrollService } from '../../services/payroll.service';
 import { PayslipModel } from '../../models/payslip.model';
 import { UserService } from '../../services/user.service';
+import { Chart, ChartConfiguration, ChartData, ChartType } from 'chart.js/auto';
+import { registerables } from 'chart.js';
+
+// Registrácia všetkých potrebných komponentov Chart.js
+Chart.register(...registerables);
 
 @Component({
   selector: 'app-payroll',
@@ -78,50 +89,15 @@ import { UserService } from '../../services/user.service';
         class="payroll-summary"
       >
         <div class="chart-container">
+          <h3>Rozdelenie hrubej mzdy</h3>
           <div class="chart">
             <div class="chart-center">
               <div class="total-amount">
                 {{ selectedPayslip.grossWage.toFixed(2) }} €
               </div>
+              <div class="total-label">Hrubá mzda</div>
             </div>
-            <svg viewBox="0 0 100 100" class="chart-svg">
-              <!-- Zelená časť - čistá mzda -->
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                stroke="#4CAF50"
-                stroke-width="20"
-                stroke-dasharray="251.2"
-                stroke-dashoffset="0"
-                fill="none"
-                class="chart-circle net-salary"
-              />
-              <!-- Červená časť - odvody -->
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                stroke="#F44336"
-                stroke-width="20"
-                stroke-dasharray="62.8"
-                stroke-dashoffset="251.2"
-                fill="none"
-                class="chart-circle deductions"
-              />
-              <!-- Šedá časť - daň -->
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                stroke="#9E9E9E"
-                stroke-width="20"
-                stroke-dasharray="37.68"
-                stroke-dashoffset="314"
-                fill="none"
-                class="chart-circle tax"
-              />
-            </svg>
+            <canvas #payrollChart class="chart-canvas"></canvas>
           </div>
           <div class="chart-legend">
             <div class="legend-item">
@@ -145,6 +121,43 @@ import { UserService } from '../../services/user.service';
                 {{ selectedPayslip.tax.toFixed(2) }} €
               </div>
             </div>
+          </div>
+        </div>
+
+        <div class="chart-container mt-4">
+          <h3>Zložky hrubej mzdy</h3>
+          <div class="chart">
+            <canvas #wageComponentsChart class="chart-canvas"></canvas>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item">
+              <div class="legend-color monthly-wage-color"></div>
+              <div class="legend-text">Mesačná mzda</div>
+              <div class="legend-value">
+                {{ selectedPayslip.monthlyWage.toFixed(2) }} €
+              </div>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color monthly-bonus-color"></div>
+              <div class="legend-text">Mesačná odmena</div>
+              <div class="legend-value">
+                {{ selectedPayslip.monthlyBonus.toFixed(2) }} €
+              </div>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color leave-compensation-color"></div>
+              <div class="legend-text">Náhrada mzdy za dovolenku</div>
+              <div class="legend-value">
+                {{ selectedPayslip.wageCompensationForLeave.toFixed(2) }} €
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chart-container mt-4 full-width">
+          <h3>Vývoj mzdy v čase</h3>
+          <div class="chart-wide">
+            <canvas #salaryHistoryChart class="chart-canvas"></canvas>
           </div>
         </div>
       </div>
@@ -527,10 +540,33 @@ import { UserService } from '../../services/user.service';
         align-items: center;
       }
 
+      .chart-container h3 {
+        margin-bottom: 16px;
+        font-size: 16px;
+        font-weight: 500;
+        color: #333;
+        align-self: flex-start;
+      }
+
+      .mt-4 {
+        margin-top: 24px;
+      }
+
+      .full-width {
+        width: 100%;
+      }
+
       .chart {
         position: relative;
-        width: 200px;
-        height: 200px;
+        width: 250px;
+        height: 250px;
+        margin-bottom: 16px;
+      }
+
+      .chart-wide {
+        position: relative;
+        width: 100%;
+        height: 250px;
         margin-bottom: 16px;
       }
 
@@ -544,6 +580,8 @@ import { UserService } from '../../services/user.service';
         align-items: center;
         justify-content: center;
         flex-direction: column;
+        z-index: 10;
+        pointer-events: none;
       }
 
       .total-amount {
@@ -552,14 +590,15 @@ import { UserService } from '../../services/user.service';
         color: #333;
       }
 
-      .chart-svg {
-        width: 100%;
-        height: 100%;
-        transform: rotate(-90deg);
+      .total-label {
+        font-size: 14px;
+        color: #666;
+        margin-top: 4px;
       }
 
-      .chart-circle {
-        transition: stroke-dashoffset 0.5s ease-in-out;
+      .chart-canvas {
+        width: 100% !important;
+        height: 100% !important;
       }
 
       .chart-legend {
@@ -589,6 +628,18 @@ import { UserService } from '../../services/user.service';
 
       .tax-color {
         background-color: #9e9e9e;
+      }
+
+      .monthly-wage-color {
+        background-color: #2196f3;
+      }
+
+      .monthly-bonus-color {
+        background-color: #ff9800;
+      }
+
+      .leave-compensation-color {
+        background-color: #9c27b0;
       }
 
       .legend-text {
@@ -704,10 +755,26 @@ import { UserService } from '../../services/user.service';
     `,
   ],
 })
-export class PayrollComponent implements OnInit {
+export class PayrollComponent implements OnInit, AfterViewInit {
+  @ViewChild('payrollChart') payrollChartCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('wageComponentsChart')
+  wageComponentsChartCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('salaryHistoryChart')
+  salaryHistoryChartCanvas!: ElementRef<HTMLCanvasElement>;
+
   selectedEmployeeIndex: number = 0;
   payslips: PayslipModel[] = [];
   selectedPayslip: PayslipModel | null = null;
+  payrollChart: Chart | null = null;
+  wageComponentsChart: Chart | null = null;
+  salaryHistoryChart: Chart | null = null;
+
+  // Simulované historické dáta pre graf vývoja mzdy
+  salaryHistory = {
+    months: ['Január', 'Február', 'Marec', 'Apríl', 'Máj', 'Jún'],
+    grossWage: [1800, 1800, 1850, 1850, 1900, 1950],
+    netWage: [1350, 1350, 1380, 1380, 1420, 1460],
+  };
 
   loading = false;
   error: string | null = null;
@@ -721,6 +788,12 @@ export class PayrollComponent implements OnInit {
     this.loadPayrollData();
   }
 
+  ngAfterViewInit(): void {
+    if (this.selectedPayslip) {
+      this.createOrUpdateChart();
+    }
+  }
+
   loadPayrollData(): void {
     this.loading = true;
     this.error = null;
@@ -732,6 +805,9 @@ export class PayrollComponent implements OnInit {
           this.payslips = payslips;
           this.selectedEmployeeIndex = 0;
           this.selectedPayslip = this.payslips[this.selectedEmployeeIndex];
+          setTimeout(() => {
+            this.createOrUpdateChart();
+          });
           this.loading = false;
         } else {
           this.error = 'Nenašli sa žiadne výplatné pásky.';
@@ -757,6 +833,7 @@ export class PayrollComponent implements OnInit {
     }
 
     this.selectedPayslip = this.payslips[this.selectedEmployeeIndex];
+    this.createOrUpdateChart();
   }
 
   nextEmployee(): void {
@@ -769,12 +846,14 @@ export class PayrollComponent implements OnInit {
     }
 
     this.selectedPayslip = this.payslips[this.selectedEmployeeIndex];
+    this.createOrUpdateChart();
   }
 
   selectEmployee(index: number): void {
     if (index >= 0 && index < this.payslips.length) {
       this.selectedEmployeeIndex = index;
       this.selectedPayslip = this.payslips[this.selectedEmployeeIndex];
+      this.createOrUpdateChart();
     }
   }
 
@@ -787,5 +866,282 @@ export class PayrollComponent implements OnInit {
     return (
       parts[0].charAt(0) + parts[parts.length - 1].charAt(0)
     ).toUpperCase();
+  }
+
+  createOrUpdateChart(): void {
+    if (!this.selectedPayslip) return;
+
+    this.createPayrollDistributionChart();
+    this.createWageComponentsChart();
+    this.createSalaryHistoryChart();
+  }
+
+  createPayrollDistributionChart(): void {
+    if (!this.selectedPayslip || !this.payrollChartCanvas) return;
+
+    const netWage = this.selectedPayslip.netWage;
+    const insuranceTotal = this.selectedPayslip.employeeInsuranceTotal;
+    const tax = this.selectedPayslip.tax;
+    const total = netWage + insuranceTotal + tax;
+
+    // Percentuálne hodnoty pre lepšiu vizualizáciu
+    const netWagePercent = ((netWage / total) * 100).toFixed(1);
+    const insuranceTotalPercent = ((insuranceTotal / total) * 100).toFixed(1);
+    const taxPercent = ((tax / total) * 100).toFixed(1);
+
+    // Ak už existuje graf, zničíme ho
+    if (this.payrollChart) {
+      this.payrollChart.destroy();
+    }
+
+    // Vytvoríme nový graf
+    this.payrollChart = new Chart(this.payrollChartCanvas.nativeElement, {
+      type: 'doughnut',
+      data: {
+        labels: ['Čistá mzda', 'Odvody do poisťovní', 'Daň'],
+        datasets: [
+          {
+            data: [netWage, insuranceTotal, tax],
+            backgroundColor: ['#4CAF50', '#F44336', '#9E9E9E'],
+            hoverBackgroundColor: ['#66BB6A', '#EF5350', '#BDBDBD'],
+            borderWidth: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '70%',
+        animation: {
+          animateRotate: true,
+          animateScale: true,
+          duration: 1000,
+          easing: 'easeOutQuart',
+        },
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            enabled: true,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            titleColor: '#333',
+            bodyColor: '#333',
+            borderColor: '#ddd',
+            borderWidth: 1,
+            cornerRadius: 8,
+            padding: 12,
+            boxPadding: 6,
+            usePointStyle: true,
+            callbacks: {
+              label: function (context) {
+                const value = context.raw as number;
+                const percent = context.parsed as number;
+                const percentValue = (
+                  (percent /
+                    context.dataset.data.reduce(
+                      (a, b) => a + (b as number),
+                      0
+                    )) *
+                  100
+                ).toFixed(1);
+                return `${context.label}: ${value.toFixed(
+                  2
+                )} € (${percentValue}%)`;
+              },
+              labelTextColor: function (context) {
+                return '#333';
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  createWageComponentsChart(): void {
+    if (!this.selectedPayslip || !this.wageComponentsChartCanvas) return;
+
+    const monthlyWage = this.selectedPayslip.monthlyWage;
+    const monthlyBonus = this.selectedPayslip.monthlyBonus;
+    const wageCompensationForLeave =
+      this.selectedPayslip.wageCompensationForLeave;
+    const total = monthlyWage + monthlyBonus + wageCompensationForLeave;
+
+    // Ak už existuje graf, zničíme ho
+    if (this.wageComponentsChart) {
+      this.wageComponentsChart.destroy();
+    }
+
+    // Vytvoríme nový graf
+    this.wageComponentsChart = new Chart(
+      this.wageComponentsChartCanvas.nativeElement,
+      {
+        type: 'pie',
+        data: {
+          labels: [
+            'Mesačná mzda',
+            'Mesačná odmena',
+            'Náhrada mzdy za dovolenku',
+          ],
+          datasets: [
+            {
+              data: [monthlyWage, monthlyBonus, wageCompensationForLeave],
+              backgroundColor: ['#2196F3', '#FF9800', '#9C27B0'],
+              hoverBackgroundColor: ['#42A5F5', '#FFA726', '#AB47BC'],
+              borderWidth: 0,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: {
+            animateRotate: true,
+            animateScale: true,
+            duration: 1000,
+            easing: 'easeOutQuart',
+          },
+          plugins: {
+            legend: {
+              display: false,
+            },
+            tooltip: {
+              enabled: true,
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              titleColor: '#333',
+              bodyColor: '#333',
+              borderColor: '#ddd',
+              borderWidth: 1,
+              cornerRadius: 8,
+              padding: 12,
+              boxPadding: 6,
+              usePointStyle: true,
+              callbacks: {
+                label: function (context) {
+                  const value = context.raw as number;
+                  const percent = context.parsed as number;
+                  const percentValue = (
+                    (percent /
+                      context.dataset.data.reduce(
+                        (a, b) => a + (b as number),
+                        0
+                      )) *
+                    100
+                  ).toFixed(1);
+                  return `${context.label}: ${value.toFixed(
+                    2
+                  )} € (${percentValue}%)`;
+                },
+                labelTextColor: function (context) {
+                  return '#333';
+                },
+              },
+            },
+          },
+        },
+      }
+    );
+  }
+
+  createSalaryHistoryChart(): void {
+    if (!this.salaryHistoryChartCanvas) return;
+
+    // Ak už existuje graf, zničíme ho
+    if (this.salaryHistoryChart) {
+      this.salaryHistoryChart.destroy();
+    }
+
+    // Vytvoríme nový graf
+    this.salaryHistoryChart = new Chart(
+      this.salaryHistoryChartCanvas.nativeElement,
+      {
+        type: 'line',
+        data: {
+          labels: this.salaryHistory.months,
+          datasets: [
+            {
+              label: 'Hrubá mzda',
+              data: this.salaryHistory.grossWage,
+              borderColor: '#673AB7',
+              backgroundColor: 'rgba(103, 58, 183, 0.1)',
+              borderWidth: 2,
+              pointBackgroundColor: '#673AB7',
+              pointBorderColor: '#fff',
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              fill: true,
+              tension: 0.3,
+            },
+            {
+              label: 'Čistá mzda',
+              data: this.salaryHistory.netWage,
+              borderColor: '#4CAF50',
+              backgroundColor: 'rgba(76, 175, 80, 0.1)',
+              borderWidth: 2,
+              pointBackgroundColor: '#4CAF50',
+              pointBorderColor: '#fff',
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              fill: true,
+              tension: 0.3,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: false,
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)',
+              },
+              ticks: {
+                callback: function (value) {
+                  return value + ' €';
+                },
+              },
+            },
+            x: {
+              grid: {
+                display: false,
+              },
+            },
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: {
+                boxWidth: 12,
+                usePointStyle: true,
+                pointStyle: 'circle',
+              },
+            },
+            tooltip: {
+              enabled: true,
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              titleColor: '#333',
+              bodyColor: '#333',
+              borderColor: '#ddd',
+              borderWidth: 1,
+              cornerRadius: 8,
+              padding: 12,
+              boxPadding: 6,
+              callbacks: {
+                label: function (context) {
+                  const value = context.raw as number;
+                  return `${context.dataset.label}: ${value.toFixed(2)} €`;
+                },
+                labelTextColor: function (context) {
+                  return '#333';
+                },
+              },
+            },
+          },
+        },
+      }
+    );
   }
 }
