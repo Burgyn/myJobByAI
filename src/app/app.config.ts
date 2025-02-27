@@ -11,12 +11,6 @@ import { routes } from './app.routes';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
-    provideRouter([
-      { path: 'home', component: HomeComponent },
-      { path: 'messages', component: MessagesComponent },
-      { path: 'documents', component: DocumentsComponent },
-      { path: 'profile', component: ProfileComponent },
-      { path: 'plus', component: PlusComponent },
-    ])
-  ]
+    provideRouter(routes),
+  ],
 };
