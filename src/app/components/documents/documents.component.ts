@@ -1,7 +1,13 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { DocumentService } from '../../services/document.service';
+import { UserService } from '../../services/user.service';
+import { FolderItem, Document } from '../../models/document.model';
 
 @Component({
   selector: 'app-documents',
+  standalone: true,
+  imports: [CommonModule],
   template: `
     <div class="header">
       <div class="header-content">
@@ -10,46 +16,41 @@ import { Component } from '@angular/core';
       </div>
     </div>
     <div class="content">
-      <div class="document-item">
-        <div class="document-icon">
-          <i class="material-icons">description</i>
-        </div>
-        <div class="document-info">
-          <h2>Zmenový rozpis - Týždeň 13</h2>
-          <p>Od: Peter Hlavný</p>
-          <p class="date">25.3.2024</p>
-        </div>
-        <div class="document-actions">
-          <button class="btn-reject">Odmietnuť</button>
-          <button class="btn-approve">Potvrdiť</button>
-        </div>
+      <div *ngIf="loading" class="loading">
+        <p>Načítavam dokumenty...</p>
       </div>
 
-      <div class="document-item">
-        <div class="document-icon">
-          <i class="material-icons">description</i>
-        </div>
-        <div class="document-info">
-          <h2>Žiadosť o dovolenku</h2>
-          <p>Od: Peter Hlavný</p>
-          <p class="date">20.3.2024</p>
-        </div>
-        <div class="document-actions">
-          <i class="material-icons document-download">file_download</i>
-        </div>
+      <div *ngIf="error" class="error">
+        <p>{{ error }}</p>
       </div>
 
-      <div class="document-item">
+      <div
+        *ngIf="!loading && !error && (!documents || documents.length === 0)"
+        class="empty-state"
+      >
+        <i class="material-icons">folder_open</i>
+        <p>Žiadne dokumenty neboli nájdené</p>
+      </div>
+
+      <div *ngFor="let document of documents" class="document-item">
         <div class="document-icon">
-          <i class="material-icons">description</i>
+          <i class="material-icons">{{ getDocumentIcon(document.type) }}</i>
         </div>
         <div class="document-info">
-          <h2>Ročné zúčtovanie dane 2023</h2>
-          <p>Od: Jana Mzdová</p>
-          <p class="date">15.1.2024</p>
+          <h2>{{ document.name }}</h2>
+          <p class="date">{{ formatDate(document.modifiedAt) }}</p>
         </div>
         <div class="document-actions">
-          <i class="material-icons document-download">file_download</i>
+          <i
+            class="material-icons document-download"
+            (click)="downloadDocument(document.id)"
+            >file_download</i
+          >
+          <i
+            class="material-icons document-open"
+            (click)="openDocument(document.id)"
+            >open_in_new</i
+          >
         </div>
       </div>
     </div>
@@ -138,34 +139,138 @@ import { Component } from '@angular/core';
 
       .document-actions {
         display: flex;
-        gap: 8px;
+        gap: 16px;
       }
 
-      .btn-reject {
-        background-color: transparent;
-        color: #666;
-        border: none;
-        padding: 8px 12px;
-        border-radius: 4px;
-        font-size: 14px;
-        cursor: pointer;
-      }
-
-      .btn-approve {
-        background-color: #673ab7;
-        color: white;
-        border: none;
-        padding: 8px 12px;
-        border-radius: 4px;
-        font-size: 14px;
-        cursor: pointer;
-      }
-
-      .document-download {
+      .document-download,
+      .document-open {
         color: #666;
         cursor: pointer;
+      }
+
+      .document-download:hover,
+      .document-open:hover {
+        color: #673ab7;
+      }
+
+      .loading,
+      .error,
+      .empty-state {
+        text-align: center;
+        padding: 32px 16px;
+        color: #666;
+      }
+
+      .empty-state i {
+        font-size: 48px;
+        color: #ddd;
+        margin-bottom: 16px;
       }
     `,
   ],
 })
-export class DocumentsComponent {}
+export class DocumentsComponent implements OnInit {
+  documents: FolderItem[] = [];
+  loading = false;
+  error: string | null = null;
+
+  constructor(
+    private documentService: DocumentService,
+    private userService: UserService
+  ) {}
+
+  ngOnInit(): void {
+    this.loadDocuments();
+  }
+
+  loadDocuments(): void {
+    this.loading = true;
+    this.error = null;
+
+    const user = this.userService.getCurrentUserValue();
+
+    this.documentService
+      .getPersonDocuments(user.tenantId, user.personId)
+      .subscribe({
+        next: (response) => {
+          this.documents = response.items || [];
+          this.loading = false;
+        },
+        error: (err) => {
+          console.error('Chyba pri načítaní dokumentov', err);
+          this.error =
+            'Nepodarilo sa načítať dokumenty. Skúste to prosím neskôr.';
+          this.loading = false;
+        },
+      });
+  }
+
+  downloadDocument(documentId: string): void {
+    const user = this.userService.getCurrentUserValue();
+
+    this.documentService
+      .downloadPersonDocument(user.tenantId, user.personId, documentId)
+      .subscribe({
+        next: (document) => {
+          if (document.downloadUrl) {
+            window.open(document.downloadUrl, '_blank');
+          } else {
+            console.error('Dokument nemá URL na stiahnutie');
+          }
+        },
+        error: (err) => {
+          console.error('Chyba pri sťahovaní dokumentu', err);
+        },
+      });
+  }
+
+  openDocument(documentId: string): void {
+    const user = this.userService.getCurrentUserValue();
+
+    this.documentService
+      .openPersonDocument(user.tenantId, user.personId, documentId)
+      .subscribe({
+        next: (document) => {
+          if (document.downloadUrl) {
+            window.open(document.downloadUrl, '_blank');
+          } else {
+            console.error('Dokument nemá URL na otvorenie');
+          }
+        },
+        error: (err) => {
+          console.error('Chyba pri otváraní dokumentu', err);
+        },
+      });
+  }
+
+  getDocumentIcon(type: string | null): string {
+    if (!type) return 'description';
+
+    switch (type.toLowerCase()) {
+      case 'pdf':
+        return 'picture_as_pdf';
+      case 'doc':
+      case 'docx':
+        return 'description';
+      case 'xls':
+      case 'xlsx':
+        return 'table_chart';
+      case 'ppt':
+      case 'pptx':
+        return 'slideshow';
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+        return 'image';
+      default:
+        return 'description';
+    }
+  }
+
+  formatDate(dateString: string): string {
+    if (!dateString) return '';
+
+    const date = new Date(dateString);
+    return date.toLocaleDateString('sk-SK');
+  }
+}
