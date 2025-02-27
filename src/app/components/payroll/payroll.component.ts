@@ -121,36 +121,6 @@ Chart.register(...registerables);
           </div>
         </div>
 
-        <div class="chart-container mt-4">
-          <h3>Zložky hrubej mzdy</h3>
-          <div class="chart">
-            <canvas #wageComponentsChart class="chart-canvas"></canvas>
-          </div>
-          <div class="chart-legend">
-            <div class="legend-item">
-              <div class="legend-color monthly-wage-color"></div>
-              <div class="legend-text">Mesačná mzda</div>
-              <div class="legend-value">
-                {{ selectedPayslip.monthlyWage.toFixed(2) }} €
-              </div>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color monthly-bonus-color"></div>
-              <div class="legend-text">Mesačná odmena</div>
-              <div class="legend-value">
-                {{ selectedPayslip.monthlyBonus.toFixed(2) }} €
-              </div>
-            </div>
-            <div class="legend-item">
-              <div class="legend-color leave-compensation-color"></div>
-              <div class="legend-text">Náhrada mzdy za dovolenku</div>
-              <div class="legend-value">
-                {{ selectedPayslip.wageCompensationForLeave.toFixed(2) }} €
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div class="chart-container mt-4 full-width">
           <h3>Vývoj mzdy v čase</h3>
           <div class="chart-wide">
@@ -608,18 +578,6 @@ Chart.register(...registerables);
         background-color: #f44336;
       }
 
-      .monthly-wage-color {
-        background-color: #2196f3;
-      }
-
-      .monthly-bonus-color {
-        background-color: #4caf50;
-      }
-
-      .leave-compensation-color {
-        background-color: #9c27b0;
-      }
-
       .legend-text {
         flex: 1;
         font-size: 14px;
@@ -726,8 +684,6 @@ Chart.register(...registerables);
 })
 export class PayrollComponent implements OnInit, AfterViewInit {
   @ViewChild('payrollChart') payrollChartCanvas!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('wageComponentsChart')
-  wageComponentsChartCanvas!: ElementRef<HTMLCanvasElement>;
   @ViewChild('salaryHistoryChart')
   salaryHistoryChartCanvas!: ElementRef<HTMLCanvasElement>;
 
@@ -735,7 +691,6 @@ export class PayrollComponent implements OnInit, AfterViewInit {
   payslips: PayslipModel[] = [];
   selectedPayslip: PayslipModel | null = null;
   payrollChart: Chart | null = null;
-  wageComponentsChart: Chart | null = null;
   salaryHistoryChart: Chart | null = null;
 
   // Ukážkové dáta pre graf vývoja mzdy
@@ -823,7 +778,6 @@ export class PayrollComponent implements OnInit, AfterViewInit {
   createOrUpdateChart(): void {
     if (this.selectedPayslip) {
       this.createPayrollDistributionChart();
-      this.createWageComponentsChart();
       this.createSalaryHistoryChart();
     }
   }
@@ -909,91 +863,6 @@ export class PayrollComponent implements OnInit, AfterViewInit {
         },
       },
     });
-  }
-
-  createWageComponentsChart(): void {
-    if (!this.selectedPayslip || !this.wageComponentsChartCanvas) return;
-
-    const monthlyWage = this.selectedPayslip.monthlyWage;
-    const monthlyBonus = this.selectedPayslip.monthlyBonus;
-    const wageCompensationForLeave =
-      this.selectedPayslip.wageCompensationForLeave;
-    const total = monthlyWage + monthlyBonus + wageCompensationForLeave;
-
-    // Ak už existuje graf, zničíme ho
-    if (this.wageComponentsChart) {
-      this.wageComponentsChart.destroy();
-    }
-
-    // Vytvoríme nový graf
-    this.wageComponentsChart = new Chart(
-      this.wageComponentsChartCanvas.nativeElement,
-      {
-        type: 'pie',
-        data: {
-          labels: [
-            'Mesačná mzda',
-            'Mesačná odmena',
-            'Náhrada mzdy za dovolenku',
-          ],
-          datasets: [
-            {
-              data: [monthlyWage, monthlyBonus, wageCompensationForLeave],
-              backgroundColor: ['#2196F3', '#FF9800', '#9C27B0'],
-              hoverBackgroundColor: ['#42A5F5', '#FFA726', '#AB47BC'],
-              borderWidth: 0,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          animation: {
-            animateRotate: true,
-            animateScale: true,
-            duration: 1000,
-            easing: 'easeOutQuart',
-          },
-          plugins: {
-            legend: {
-              display: false,
-            },
-            tooltip: {
-              enabled: true,
-              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-              titleColor: '#333',
-              bodyColor: '#333',
-              borderColor: '#ddd',
-              borderWidth: 1,
-              cornerRadius: 8,
-              padding: 12,
-              boxPadding: 6,
-              usePointStyle: true,
-              callbacks: {
-                label: function (context) {
-                  const value = context.raw as number;
-                  const percent = context.parsed as number;
-                  const percentValue = (
-                    (percent /
-                      context.dataset.data.reduce(
-                        (a, b) => a + (b as number),
-                        0
-                      )) *
-                    100
-                  ).toFixed(1);
-                  return `${context.label}: ${value.toFixed(
-                    2
-                  )} € (${percentValue}%)`;
-                },
-                labelTextColor: function (context) {
-                  return '#333';
-                },
-              },
-            },
-          },
-        },
-      }
-    );
   }
 
   createSalaryHistoryChart(): void {
