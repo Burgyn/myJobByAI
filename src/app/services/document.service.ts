@@ -9,11 +9,11 @@ import { Document, FolderContent } from '../models/document.model';
 export class DocumentService {
   private baseUrl = 'https://26d7-195-146-148-132.ngrok-free.app/api/company';
 
-  // Hlavičky, ktoré nespúšťajú preflight check
+  // Hlavičky pre GET požiadavky
   private headers = new HttpHeaders({
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
-    'X-Requested-With': 'XMLHttpRequest',
+    // Pre GET požiadavky nepotrebujeme Content-Type, ale môžeme použiť Accept
+    Accept: 'application/json', // Povie serveru, že očakávame JSON odpoveď
+    'X-Requested-With': 'XMLHttpRequest', // Táto hlavička je bezpečná
   });
 
   constructor(private http: HttpClient) {}
