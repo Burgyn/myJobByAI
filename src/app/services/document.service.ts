@@ -7,13 +7,13 @@ import { Document, FolderContent } from '../models/document.model';
   providedIn: 'root',
 })
 export class DocumentService {
-  // private baseUrl = 'https://26d7-195-146-148-132.ngrok-free.app/api/company';
   private baseUrl =
-    'https://esw-payrolls-test-gateway-api.azurewebsites.net/company';
+    'https://krospayrollsemployeeapi20250227140928-eca6bxhsa6dgc3hx.westeurope-01.azurewebsites.net/api/company'; // Nový endpoint API
 
   // Hlavičky pre GET požiadavky
   private headers = new HttpHeaders({
     // Pre GET požiadavky nepotrebujeme Content-Type, ale môžeme použiť Accept
+    'Content-Type': 'application/json',
     Accept: 'application/json', // Povie serveru, že očakávame JSON odpoveď
     'X-Requested-With': 'XMLHttpRequest', // Táto hlavička je bezpečná
   });
