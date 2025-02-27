@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Document, FolderContent } from '../models/document.model';
 
@@ -9,6 +9,13 @@ import { Document, FolderContent } from '../models/document.model';
 export class DocumentService {
   private baseUrl = 'https://26d7-195-146-148-132.ngrok-free.app/api/company';
 
+  // Hlavičky, ktoré nespúšťajú preflight check
+  private headers = new HttpHeaders({
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
+  });
+
   constructor(private http: HttpClient) {}
 
   getPersonDocuments(
@@ -16,7 +23,7 @@ export class DocumentService {
     personId: string
   ): Observable<FolderContent> {
     const url = `${this.baseUrl}/${tenantId}/documents/persons/${personId}`;
-    return this.http.get<FolderContent>(url);
+    return this.http.get<FolderContent>(url, { headers: this.headers });
   }
 
   getPersonDocumentsForFolder(
@@ -25,7 +32,7 @@ export class DocumentService {
     folderId: string
   ): Observable<FolderContent> {
     const url = `${this.baseUrl}/${tenantId}/documents/persons/${personId}/${folderId}`;
-    return this.http.get<FolderContent>(url);
+    return this.http.get<FolderContent>(url, { headers: this.headers });
   }
 
   downloadPersonDocument(
@@ -34,7 +41,7 @@ export class DocumentService {
     documentId: string
   ): Observable<Document> {
     const url = `${this.baseUrl}/${tenantId}/documents/persons/${personId}/document/${documentId}`;
-    return this.http.get<Document>(url);
+    return this.http.get<Document>(url, { headers: this.headers });
   }
 
   openPersonDocument(
@@ -43,6 +50,6 @@ export class DocumentService {
     documentId: string
   ): Observable<Document> {
     const url = `${this.baseUrl}/${tenantId}/documents/persons/${personId}/document/${documentId}/open`;
-    return this.http.get<Document>(url);
+    return this.http.get<Document>(url, { headers: this.headers });
   }
 }

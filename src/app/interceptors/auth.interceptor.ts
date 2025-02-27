@@ -1,31 +1,23 @@
-import { Injectable } from '@angular/core';
 import {
   HttpRequest,
-  HttpHandler,
-  HttpEvent,
-  HttpInterceptor,
+  HttpHandlerFn,
+  HttpInterceptorFn,
 } from '@angular/common/http';
-import { Observable } from 'rxjs';
 
-@Injectable()
-export class AuthInterceptor implements HttpInterceptor {
-  constructor() {}
+export const AuthInterceptor: HttpInterceptorFn = (
+  req: HttpRequest<unknown>,
+  next: HttpHandlerFn
+) => {
+  const token = localStorage.getItem('bearerToken');
 
-  intercept(
-    request: HttpRequest<unknown>,
-    next: HttpHandler
-  ): Observable<HttpEvent<unknown>> {
-    const token = localStorage.getItem('bearerToken');
-
-    if (token) {
-      const authReq = request.clone({
-        setHeaders: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      return next.handle(authReq);
-    }
-
-    return next.handle(request);
+  if (token) {
+    const authReq = req.clone({
+      setHeaders: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return next(authReq);
   }
-}
+
+  return next(req);
+};
