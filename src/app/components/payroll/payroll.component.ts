@@ -26,15 +26,19 @@ Chart.register(...registerables);
         <i class="material-icons header-icon">payments</i>
         <h1>Výplatné pásky</h1>
       </div>
-      <div class="month-selector" *ngIf="payslips && payslips.length > 0">
-        <button (click)="previousMonth()" class="month-nav-button">
-          <i class="material-icons">chevron_left</i>
+      <div class="month-navigation" *ngIf="payslips && payslips.length > 0">
+        <button
+          type="button"
+          (click)="previousMonth()"
+          class="month-nav-button"
+        >
+          <span class="material-icons">chevron_left</span>
         </button>
         <span class="current-month">{{
           payslips[selectedMonthIndex].payslipPeriod
         }}</span>
-        <button (click)="nextMonth()" class="month-nav-button">
-          <i class="material-icons">chevron_right</i>
+        <button type="button" (click)="nextMonth()" class="month-nav-button">
+          <span class="material-icons">chevron_right</span>
         </button>
       </div>
     </div>
@@ -344,7 +348,7 @@ Chart.register(...registerables);
         text-align: left;
       }
 
-      .month-selector {
+      .month-navigation {
         display: flex;
         align-items: center;
         background-color: rgba(255, 255, 255, 0.1);
@@ -360,7 +364,17 @@ Chart.register(...registerables);
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 4px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+      }
+
+      .month-nav-button:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .month-nav-button span {
+        font-size: 18px;
       }
 
       .current-month {
@@ -390,7 +404,7 @@ Chart.register(...registerables);
         flex-wrap: nowrap;
         overflow-x: auto;
         gap: 12px;
-        padding-bottom: 8px;
+        padding: 8px 0;
         scrollbar-width: thin;
         scrollbar-color: #673ab7 #f0f0f0;
       }
