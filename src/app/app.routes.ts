@@ -6,6 +6,7 @@ import { ProfileComponent } from './components/profile/profile.component';
 import { PlusComponent } from './components/plus/plus.component';
 
 export const routes: Routes = [
+  { path: '', redirectTo: 'home', pathMatch: 'full' },
   { path: 'home', component: HomeComponent },
   { path: 'messages', component: MessagesComponent },
   { path: 'documents', component: DocumentsComponent },
