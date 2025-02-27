@@ -26,14 +26,14 @@ Chart.register(...registerables);
         <i class="material-icons header-icon">payments</i>
         <h1>Výplatné pásky</h1>
       </div>
-      <div class="employee-selector" *ngIf="payslips && payslips.length > 0">
-        <button (click)="previousEmployee()" class="employee-nav-button">
+      <div class="month-selector" *ngIf="payslips && payslips.length > 0">
+        <button (click)="previousMonth()" class="month-nav-button">
           <i class="material-icons">chevron_left</i>
         </button>
-        <span class="current-employee">{{
-          payslips[selectedEmployeeIndex].employeeName
+        <span class="current-month">{{
+          payslips[selectedMonthIndex].payslipPeriod
         }}</span>
-        <button (click)="nextEmployee()" class="employee-nav-button">
+        <button (click)="nextMonth()" class="month-nav-button">
           <i class="material-icons">chevron_right</i>
         </button>
       </div>
@@ -48,24 +48,21 @@ Chart.register(...registerables);
         <p>{{ error }}</p>
       </div>
 
-      <!-- Zoznam zamestnancov -->
+      <!-- Zoznam mesiacov -->
       <div
         *ngIf="!loading && !error && payslips && payslips.length > 0"
-        class="employees-list"
+        class="months-list"
       >
-        <h2>Zamestnanci</h2>
-        <div class="employees-grid">
+        <h2>Výplatné pásky podľa mesiacov</h2>
+        <div class="months-grid">
           <div
             *ngFor="let payslip of payslips; let i = index"
-            class="employee-card"
-            [class.active]="i === selectedEmployeeIndex"
-            (click)="selectEmployee(i)"
+            class="month-card"
+            [class.active]="i === selectedMonthIndex"
+            (click)="selectMonth(i)"
           >
-            <div class="employee-initials">
-              {{ getInitials(payslip.employeeName) }}
-            </div>
-            <div class="employee-name">{{ payslip.employeeName }}</div>
-            <div class="employee-position">{{ payslip.position }}</div>
+            <div class="month-period">{{ payslip.payslipPeriod }}</div>
+            <div class="month-amount">{{ payslip.netWage.toFixed(2) }} €</div>
           </div>
         </div>
       </div>
@@ -343,25 +340,26 @@ Chart.register(...registerables);
     `
       :host {
         display: block;
-        padding-bottom: 70px;
-        background-color: #f5f5f5;
-        min-height: 100vh;
+        padding-bottom: 70px; /* Priestor pre spodný navigačný panel */
       }
 
       .header {
         background-color: #673ab7;
         color: white;
-        padding: 16px;
+        padding: 0 16px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         position: sticky;
         top: 0;
         z-index: 10;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
       }
 
       .header-content {
         display: flex;
         align-items: center;
-        margin-bottom: 8px;
       }
 
       .header-icon {
@@ -373,16 +371,18 @@ Chart.register(...registerables);
         margin: 0;
         font-size: 20px;
         font-weight: 500;
+        text-align: left;
       }
 
-      .employee-selector {
+      .month-selector {
         display: flex;
         align-items: center;
-        justify-content: center;
-        margin-top: 8px;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 4px 8px;
       }
 
-      .employee-nav-button {
+      .month-nav-button {
         background: none;
         border: none;
         color: white;
@@ -393,62 +393,105 @@ Chart.register(...registerables);
         padding: 4px;
       }
 
-      .current-employee {
-        font-size: 16px;
+      .current-month {
+        margin: 0 8px;
+        font-size: 14px;
         font-weight: 500;
-        margin: 0 16px;
       }
 
       .content {
         padding: 16px;
+        padding-bottom: 60px; /* Dodatočný priestor pre navigačný panel */
       }
 
-      .loading,
-      .error {
+      .months-list {
+        margin-bottom: 24px;
+      }
+
+      .months-list h2 {
+        font-size: 18px;
+        font-weight: 500;
+        margin-bottom: 16px;
+        color: #333;
+      }
+
+      .months-grid {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 12px;
+        padding-bottom: 8px;
+        scrollbar-width: thin;
+        scrollbar-color: #673ab7 #f0f0f0;
+      }
+
+      .months-grid::-webkit-scrollbar {
+        height: 6px;
+      }
+
+      .months-grid::-webkit-scrollbar-track {
+        background: #f0f0f0;
+        border-radius: 3px;
+      }
+
+      .months-grid::-webkit-scrollbar-thumb {
+        background-color: #673ab7;
+        border-radius: 3px;
+      }
+
+      .month-card {
+        flex: 0 0 auto;
+        width: 120px;
+        background-color: white;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         text-align: center;
-        padding: 32px 16px;
-        color: #666;
       }
 
-      .employees-list {
+      .month-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .month-card.active {
+        background-color: #f0ebff;
+        border: 2px solid #673ab7;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(103, 58, 183, 0.2);
+      }
+
+      .month-period {
+        font-weight: 500;
+        font-size: 14px;
+        color: #333;
+        margin-bottom: 8px;
+      }
+
+      .month-amount {
+        font-size: 16px;
+        font-weight: 600;
+        color: #673ab7;
+      }
+
+      .person-card {
+        display: flex;
+        align-items: center;
         background-color: white;
         border-radius: 12px;
         padding: 16px;
         margin-bottom: 16px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       }
 
-      .employees-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 16px;
-        margin-top: 16px;
-      }
-
-      .employee-card {
-        background-color: #f9f9f9;
-        border-radius: 8px;
-        padding: 16px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        border: 2px solid transparent;
-      }
-
-      .employee-card:hover {
-        background-color: #f0f0f0;
-      }
-
-      .employee-card.active {
-        background-color: #ede7f6;
-        border-color: #673ab7;
-      }
-
-      .employee-initials {
-        width: 50px;
-        height: 50px;
+      .person-initials {
+        width: 48px;
+        height: 48px;
         border-radius: 50%;
         background-color: #673ab7;
         color: white;
@@ -456,44 +499,6 @@ Chart.register(...registerables);
         align-items: center;
         justify-content: center;
         font-size: 18px;
-        font-weight: 500;
-        margin-bottom: 12px;
-      }
-
-      .employee-name {
-        font-size: 14px;
-        font-weight: 500;
-        color: #333;
-        text-align: center;
-        margin-bottom: 4px;
-      }
-
-      .employee-position {
-        font-size: 12px;
-        color: #666;
-        text-align: center;
-      }
-
-      .person-card {
-        background-color: white;
-        border-radius: 12px;
-        padding: 16px;
-        margin-bottom: 16px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-        display: flex;
-        align-items: center;
-      }
-
-      .person-initials {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        background-color: #673ab7;
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
         font-weight: 500;
         margin-right: 16px;
       }
@@ -503,131 +508,104 @@ Chart.register(...registerables);
       }
 
       .person-name {
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 500;
         color: #333;
         margin-bottom: 4px;
       }
 
-      .person-position {
-        font-size: 14px;
-        color: #666;
-        margin-bottom: 2px;
-      }
-
-      .person-company {
+      .person-position,
+      .person-company,
+      .person-period {
         font-size: 14px;
         color: #666;
         margin-bottom: 2px;
       }
 
       .person-period {
-        font-size: 14px;
-        color: #666;
+        font-weight: 500;
+        color: #673ab7;
       }
 
       .payroll-summary {
+        margin-bottom: 24px;
+      }
+
+      .chart-container {
         background-color: white;
         border-radius: 12px;
         padding: 16px;
         margin-bottom: 16px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-      }
-
-      .chart-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       }
 
       .chart-container h3 {
-        margin-bottom: 16px;
         font-size: 16px;
         font-weight: 500;
         color: #333;
-        align-self: flex-start;
-      }
-
-      .mt-4 {
-        margin-top: 24px;
-      }
-
-      .full-width {
-        width: 100%;
+        margin-bottom: 16px;
+        text-align: center;
       }
 
       .chart {
         position: relative;
-        width: 250px;
-        height: 250px;
-        margin-bottom: 16px;
-      }
-
-      .chart-wide {
-        position: relative;
-        width: 100%;
-        height: 250px;
+        height: 200px;
         margin-bottom: 16px;
       }
 
       .chart-center {
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        z-index: 10;
-        pointer-events: none;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        z-index: 1;
       }
 
       .total-amount {
-        font-size: 24px;
-        font-weight: 700;
+        font-size: 18px;
+        font-weight: 600;
         color: #333;
       }
 
       .total-label {
-        font-size: 14px;
+        font-size: 12px;
         color: #666;
-        margin-top: 4px;
       }
 
       .chart-canvas {
-        width: 100% !important;
-        height: 100% !important;
+        width: 100%;
+        height: 100%;
       }
 
       .chart-legend {
-        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
       }
 
       .legend-item {
         display: flex;
         align-items: center;
-        margin-bottom: 8px;
       }
 
       .legend-color {
-        width: 16px;
-        height: 16px;
-        border-radius: 4px;
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
         margin-right: 8px;
       }
 
       .net-salary-color {
-        background-color: #4caf50;
+        background-color: #673ab7;
       }
 
       .deductions-color {
-        background-color: #f44336;
+        background-color: #ff9800;
       }
 
       .tax-color {
-        background-color: #9e9e9e;
+        background-color: #f44336;
       }
 
       .monthly-wage-color {
@@ -635,7 +613,7 @@ Chart.register(...registerables);
       }
 
       .monthly-bonus-color {
-        background-color: #ff9800;
+        background-color: #4caf50;
       }
 
       .leave-compensation-color {
@@ -654,25 +632,36 @@ Chart.register(...registerables);
         color: #333;
       }
 
-      .payroll-detail,
-      .tax-info {
+      .chart-wide {
+        height: 250px;
+      }
+
+      .mt-4 {
+        margin-top: 16px;
+      }
+
+      .full-width {
+        width: 100%;
+      }
+
+      .payroll-detail {
         background-color: white;
         border-radius: 12px;
         padding: 16px;
-        margin-bottom: 16px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       }
 
-      h2 {
-        margin: 0 0 16px 0;
-        font-size: 16px;
+      .payroll-detail h2 {
+        font-size: 18px;
         font-weight: 500;
+        margin-bottom: 16px;
         color: #333;
       }
 
       .payroll-items {
         display: flex;
         flex-direction: column;
+        gap: 8px;
       }
 
       .payroll-item {
@@ -702,55 +691,35 @@ Chart.register(...registerables);
       }
 
       .highlighted {
-        font-weight: 700;
+        background-color: #f9f9f9;
+        padding: 12px 8px;
+        border-radius: 8px;
+        margin-bottom: 8px;
       }
 
       .highlighted .item-name,
-      .highlighted .item-amount:not(.negative) {
-        color: #333;
+      .highlighted .item-amount {
+        font-weight: 600;
+        font-size: 16px;
       }
 
-      .category-salary {
-        /* Štýly pre kategóriu mzdy */
+      .category-salary .item-name {
+        color: #2196f3;
       }
 
-      .category-insurance {
-        /* Štýly pre kategóriu poistenia */
+      .category-insurance .item-name {
+        color: #ff9800;
       }
 
-      .category-tax {
-        /* Štýly pre kategóriu dane */
-      }
-
-      .category-deductions {
-        /* Štýly pre kategóriu zrážok */
-      }
-
-      .category-total {
-        /* Štýly pre kategóriu celkom */
-        background-color: #f9f9f9;
-      }
-
-      .tax-info-item {
-        display: flex;
-        justify-content: space-between;
-        padding: 8px 0;
-        border-bottom: 1px solid #f0f0f0;
-      }
-
-      .tax-info-item:last-child {
-        border-bottom: none;
-      }
-
-      .tax-info-name {
-        font-size: 14px;
+      .loading,
+      .error {
+        text-align: center;
+        padding: 32px 16px;
         color: #666;
       }
 
-      .tax-info-value {
-        font-size: 14px;
-        font-weight: 500;
-        color: #333;
+      .error {
+        color: #f44336;
       }
     `,
   ],
@@ -762,18 +731,17 @@ export class PayrollComponent implements OnInit, AfterViewInit {
   @ViewChild('salaryHistoryChart')
   salaryHistoryChartCanvas!: ElementRef<HTMLCanvasElement>;
 
-  selectedEmployeeIndex: number = 0;
+  selectedMonthIndex: number = 0;
   payslips: PayslipModel[] = [];
   selectedPayslip: PayslipModel | null = null;
   payrollChart: Chart | null = null;
   wageComponentsChart: Chart | null = null;
   salaryHistoryChart: Chart | null = null;
 
-  // Simulované historické dáta pre graf vývoja mzdy
+  // Ukážkové dáta pre graf vývoja mzdy
   salaryHistory = {
     months: ['Január', 'Február', 'Marec', 'Apríl', 'Máj', 'Jún'],
-    grossWage: [1800, 1800, 1850, 1850, 1900, 1950],
-    netWage: [1350, 1350, 1380, 1380, 1420, 1460],
+    values: [1200, 1250, 1300, 1280, 1350, 1400],
   };
 
   loading = false;
@@ -789,30 +757,25 @@ export class PayrollComponent implements OnInit, AfterViewInit {
   }
 
   ngAfterViewInit(): void {
-    if (this.selectedPayslip) {
-      this.createOrUpdateChart();
-    }
+    // Grafy sa vytvoria po načítaní dát
   }
 
   loadPayrollData(): void {
     this.loading = true;
     this.error = null;
 
-    // Načítanie výplatných pások pomocou API
     this.payrollService.getPersonPayslips().subscribe({
-      next: (payslips: PayslipModel[]) => {
-        if (payslips && payslips.length > 0) {
-          this.payslips = payslips;
-          this.selectedEmployeeIndex = 0;
-          this.selectedPayslip = this.payslips[this.selectedEmployeeIndex];
+      next: (data) => {
+        this.payslips = data;
+        if (this.payslips.length > 0) {
+          this.selectedMonthIndex = 0;
+          this.selectedPayslip = this.payslips[0];
+
           setTimeout(() => {
             this.createOrUpdateChart();
-          });
-          this.loading = false;
-        } else {
-          this.error = 'Nenašli sa žiadne výplatné pásky.';
-          this.loading = false;
+          }, 0);
         }
+        this.loading = false;
       },
       error: (err) => {
         console.error('Chyba pri načítaní výplatných pások', err);
@@ -823,38 +786,26 @@ export class PayrollComponent implements OnInit, AfterViewInit {
     });
   }
 
-  previousEmployee(): void {
-    if (this.payslips.length === 0) return;
-
-    if (this.selectedEmployeeIndex === 0) {
-      this.selectedEmployeeIndex = this.payslips.length - 1;
-    } else {
-      this.selectedEmployeeIndex--;
-    }
-
-    this.selectedPayslip = this.payslips[this.selectedEmployeeIndex];
-    this.createOrUpdateChart();
-  }
-
-  nextEmployee(): void {
-    if (this.payslips.length === 0) return;
-
-    if (this.selectedEmployeeIndex === this.payslips.length - 1) {
-      this.selectedEmployeeIndex = 0;
-    } else {
-      this.selectedEmployeeIndex++;
-    }
-
-    this.selectedPayslip = this.payslips[this.selectedEmployeeIndex];
-    this.createOrUpdateChart();
-  }
-
-  selectEmployee(index: number): void {
-    if (index >= 0 && index < this.payslips.length) {
-      this.selectedEmployeeIndex = index;
-      this.selectedPayslip = this.payslips[this.selectedEmployeeIndex];
+  previousMonth(): void {
+    if (this.selectedMonthIndex > 0) {
+      this.selectedMonthIndex--;
+      this.selectedPayslip = this.payslips[this.selectedMonthIndex];
       this.createOrUpdateChart();
     }
+  }
+
+  nextMonth(): void {
+    if (this.selectedMonthIndex < this.payslips.length - 1) {
+      this.selectedMonthIndex++;
+      this.selectedPayslip = this.payslips[this.selectedMonthIndex];
+      this.createOrUpdateChart();
+    }
+  }
+
+  selectMonth(index: number): void {
+    this.selectedMonthIndex = index;
+    this.selectedPayslip = this.payslips[index];
+    this.createOrUpdateChart();
   }
 
   getInitials(name: string): string {
@@ -864,16 +815,17 @@ export class PayrollComponent implements OnInit, AfterViewInit {
     if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
 
     return (
-      parts[0].charAt(0) + parts[parts.length - 1].charAt(0)
-    ).toUpperCase();
+      parts[0].charAt(0).toUpperCase() +
+      parts[parts.length - 1].charAt(0).toUpperCase()
+    );
   }
 
   createOrUpdateChart(): void {
-    if (!this.selectedPayslip) return;
-
-    this.createPayrollDistributionChart();
-    this.createWageComponentsChart();
-    this.createSalaryHistoryChart();
+    if (this.selectedPayslip) {
+      this.createPayrollDistributionChart();
+      this.createWageComponentsChart();
+      this.createSalaryHistoryChart();
+    }
   }
 
   createPayrollDistributionChart(): void {
@@ -1047,101 +999,92 @@ export class PayrollComponent implements OnInit, AfterViewInit {
   createSalaryHistoryChart(): void {
     if (!this.salaryHistoryChartCanvas) return;
 
-    // Ak už existuje graf, zničíme ho
+    const ctx = this.salaryHistoryChartCanvas.nativeElement.getContext('2d');
+    if (!ctx) return;
+
+    // Zrušenie existujúceho grafu, ak existuje
     if (this.salaryHistoryChart) {
       this.salaryHistoryChart.destroy();
     }
 
-    // Vytvoríme nový graf
-    this.salaryHistoryChart = new Chart(
-      this.salaryHistoryChartCanvas.nativeElement,
-      {
-        type: 'line',
-        data: {
-          labels: this.salaryHistory.months,
-          datasets: [
-            {
-              label: 'Hrubá mzda',
-              data: this.salaryHistory.grossWage,
-              borderColor: '#673AB7',
-              backgroundColor: 'rgba(103, 58, 183, 0.1)',
-              borderWidth: 2,
-              pointBackgroundColor: '#673AB7',
-              pointBorderColor: '#fff',
-              pointRadius: 4,
-              pointHoverRadius: 6,
-              fill: true,
-              tension: 0.3,
-            },
-            {
-              label: 'Čistá mzda',
-              data: this.salaryHistory.netWage,
-              borderColor: '#4CAF50',
-              backgroundColor: 'rgba(76, 175, 80, 0.1)',
-              borderWidth: 2,
-              pointBackgroundColor: '#4CAF50',
-              pointBorderColor: '#fff',
-              pointRadius: 4,
-              pointHoverRadius: 6,
-              fill: true,
-              tension: 0.3,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            y: {
-              beginAtZero: false,
-              grid: {
-                color: 'rgba(0, 0, 0, 0.05)',
-              },
-              ticks: {
-                callback: function (value) {
-                  return value + ' €';
-                },
-              },
-            },
-            x: {
-              grid: {
-                display: false,
-              },
-            },
+    // Vytvorenie nových dát pre graf - použijeme reálne dáta z výplatných pások
+    const months: string[] = [];
+    const values: number[] = [];
+
+    // Zoradenie výplatných pások podľa obdobia (od najstaršej po najnovšiu)
+    const sortedPayslips = [...this.payslips].sort((a, b) => {
+      return (
+        new Date(a.payslipPeriod).getTime() -
+        new Date(b.payslipPeriod).getTime()
+      );
+    });
+
+    // Extrakcia mesiacov a hodnôt čistej mzdy
+    sortedPayslips.forEach((payslip) => {
+      months.push(payslip.payslipPeriod);
+      values.push(payslip.netWage);
+    });
+
+    // Vytvorenie grafu
+    this.salaryHistoryChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: months,
+        datasets: [
+          {
+            label: 'Čistá mzda',
+            data: values,
+            borderColor: '#673AB7',
+            backgroundColor: 'rgba(103, 58, 183, 0.1)',
+            borderWidth: 2,
+            pointBackgroundColor: '#673AB7',
+            pointBorderColor: '#fff',
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            fill: true,
+            tension: 0.3,
           },
-          plugins: {
-            legend: {
-              display: true,
-              position: 'top',
-              labels: {
-                boxWidth: 12,
-                usePointStyle: true,
-                pointStyle: 'circle',
-              },
-            },
-            tooltip: {
-              enabled: true,
-              backgroundColor: 'rgba(255, 255, 255, 0.9)',
-              titleColor: '#333',
-              bodyColor: '#333',
-              borderColor: '#ddd',
-              borderWidth: 1,
-              cornerRadius: 8,
-              padding: 12,
-              boxPadding: 6,
-              callbacks: {
-                label: function (context) {
-                  const value = context.raw as number;
-                  return `${context.dataset.label}: ${value.toFixed(2)} €`;
-                },
-                labelTextColor: function (context) {
-                  return '#333';
-                },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              label: function (context) {
+                return `${context.dataset.label}: ${context.parsed.y.toFixed(
+                  2
+                )} €`;
               },
             },
           },
         },
-      }
-    );
+        scales: {
+          x: {
+            grid: {
+              display: false,
+            },
+          },
+          y: {
+            beginAtZero: false,
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)',
+            },
+            ticks: {
+              callback: function (value) {
+                return value + ' €';
+              },
+            },
+          },
+        },
+      },
+    });
   }
 }
