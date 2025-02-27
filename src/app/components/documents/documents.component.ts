@@ -32,25 +32,38 @@ import { FolderItem, Document } from '../../models/document.model';
         <p>Žiadne dokumenty neboli nájdené</p>
       </div>
 
-      <div *ngFor="let document of documents" class="document-item">
+      <div
+        *ngFor="let document of documents"
+        class="document-card"
+        (click)="selectDocument(document)"
+        [class.active]="selectedDocument && selectedDocument.id === document.id"
+      >
         <div class="document-icon">
           <i class="material-icons">{{ getDocumentIcon(document.type) }}</i>
         </div>
         <div class="document-info">
-          <h2>{{ document.name }}</h2>
-          <p class="date">{{ formatDate(document.modifiedAt) }}</p>
+          <h2 class="document-title">{{ document.name }}</h2>
+          <p class="document-author">Od: {{ getDocumentAuthor(document) }}</p>
+          <p class="document-date">{{ formatDate(document.modifiedAt) }}</p>
         </div>
-        <div class="document-actions">
-          <i
-            class="material-icons document-download"
-            (click)="downloadDocument(document.id)"
-            >file_download</i
+        <div
+          class="document-actions"
+          *ngIf="selectedDocument && selectedDocument.id === document.id"
+        >
+          <button
+            class="action-button reject"
+            (click)="rejectDocument(document.id); $event.stopPropagation()"
           >
-          <i
-            class="material-icons document-open"
-            (click)="openDocument(document.id)"
-            >open_in_new</i
+            <i class="material-icons">close</i>
+            Odmietnuť
+          </button>
+          <button
+            class="action-button approve"
+            (click)="approveDocument(document.id); $event.stopPropagation()"
           >
+            <i class="material-icons">check_circle</i>
+            Potvrdiť
+          </button>
         </div>
       </div>
     </div>
@@ -60,6 +73,8 @@ import { FolderItem, Document } from '../../models/document.model';
       :host {
         display: block;
         padding-bottom: 70px; /* Priestor pre spodný navigačný panel */
+        background-color: #f5f5f5;
+        min-height: 100vh;
       }
 
       .header {
@@ -97,60 +112,126 @@ import { FolderItem, Document } from '../../models/document.model';
         padding-bottom: 60px; /* Dodatočný priestor pre navigačný panel */
       }
 
-      .document-item {
+      .document-card {
         display: flex;
+        flex-direction: column;
         background-color: white;
-        border-radius: 8px;
-        padding: 16px;
+        border-radius: 12px;
         margin-bottom: 16px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        align-items: center;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        cursor: pointer;
+        transition: box-shadow 0.2s, transform 0.2s;
+      }
+
+      .document-card:hover {
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+      }
+
+      .document-card.active {
+        box-shadow: 0 4px 12px rgba(103, 58, 183, 0.3);
+        border: 2px solid #673ab7;
+        transform: translateY(-2px);
+        position: relative;
+      }
+
+      .document-card.active::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 4px;
+        border-top-left-radius: 12px;
+        border-bottom-left-radius: 12px;
       }
 
       .document-icon {
-        margin-right: 16px;
+        display: flex;
+        align-items: center;
+        padding: 16px 16px 0;
       }
 
       .document-icon i {
         color: #673ab7;
         font-size: 24px;
+        background-color: #f0ebff;
+        padding: 8px;
+        border-radius: 50%;
       }
 
       .document-info {
-        flex: 1;
+        padding: 8px 16px 16px;
       }
 
-      .document-info h2 {
-        margin: 0 0 4px 0;
+      .document-title {
+        margin: 0 0 8px 0;
         font-size: 16px;
         font-weight: 500;
+        color: #333;
       }
 
-      .document-info p {
-        margin: 0;
+      .document-author {
+        margin: 0 0 4px 0;
         font-size: 14px;
         color: #666;
       }
 
-      .document-info .date {
+      .document-date {
+        margin: 0;
         font-size: 12px;
         color: #888;
       }
 
       .document-actions {
         display: flex;
-        gap: 16px;
+        border-top: 1px solid #f0f0f0;
+        animation: fadeIn 0.3s ease-in-out;
       }
 
-      .document-download,
-      .document-open {
-        color: #666;
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .action-button {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px;
+        border: none;
+        background: none;
+        font-size: 14px;
+        font-weight: 500;
         cursor: pointer;
+        gap: 8px;
+        transition: background-color 0.2s;
       }
 
-      .document-download:hover,
-      .document-open:hover {
-        color: #673ab7;
+      .action-button i {
+        font-size: 18px;
+      }
+
+      .reject {
+        color: #666;
+        border-right: 1px solid #f0f0f0;
+      }
+
+      .reject:hover {
+        background-color: #f9f9f9;
+      }
+
+      .approve {
+        color: #5e35b1;
+      }
+
+      .approve:hover {
+        background-color: #f0ebff;
       }
 
       .loading,
@@ -173,6 +254,7 @@ export class DocumentsComponent implements OnInit {
   documents: FolderItem[] = [];
   loading = false;
   error: string | null = null;
+  selectedDocument: FolderItem | null = null;
 
   constructor(
     private documentService: DocumentService,
@@ -181,6 +263,16 @@ export class DocumentsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadDocuments();
+  }
+
+  selectDocument(document: FolderItem): void {
+    if (this.selectedDocument && this.selectedDocument.id === document.id) {
+      // Ak klikneme na už vybraný dokument, zrušíme výber
+      this.selectedDocument = null;
+    } else {
+      // Inak nastavíme vybraný dokument
+      this.selectedDocument = document;
+    }
   }
 
   loadDocuments(): void {
@@ -241,6 +333,46 @@ export class DocumentsComponent implements OnInit {
           console.error('Chyba pri otváraní dokumentu', err);
         },
       });
+  }
+
+  approveDocument(documentId: string): void {
+    const user = this.userService.getCurrentUserValue();
+
+    this.documentService
+      .approvePersonDocument(user.tenantId, user.personId, documentId)
+      .subscribe({
+        next: () => {
+          console.log('Dokument úspešne potvrdený');
+          // Aktualizácia zoznamu dokumentov po potvrdení
+          this.loadDocuments();
+        },
+        error: (err) => {
+          console.error('Chyba pri potvrdzovaní dokumentu', err);
+        },
+      });
+  }
+
+  rejectDocument(documentId: string): void {
+    const user = this.userService.getCurrentUserValue();
+
+    this.documentService
+      .rejectPersonDocument(user.tenantId, user.personId, documentId)
+      .subscribe({
+        next: () => {
+          console.log('Dokument úspešne odmietnutý');
+          // Aktualizácia zoznamu dokumentov po odmietnutí
+          this.loadDocuments();
+        },
+        error: (err) => {
+          console.error('Chyba pri odmietaní dokumentu', err);
+        },
+      });
+  }
+
+  getDocumentAuthor(document: FolderItem): string {
+    // Toto je len ukážka, v reálnej aplikácii by ste získali autora z dokumentu
+    // alebo z iného zdroja dát
+    return 'Peter Hlavný';
   }
 
   getDocumentIcon(type: string | null): string {

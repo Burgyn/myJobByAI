@@ -7,7 +7,9 @@ import { Document, FolderContent } from '../models/document.model';
   providedIn: 'root',
 })
 export class DocumentService {
-  private baseUrl = 'https://26d7-195-146-148-132.ngrok-free.app/api/company';
+  // private baseUrl = 'https://26d7-195-146-148-132.ngrok-free.app/api/company';
+  private baseUrl =
+    'https://esw-payrolls-test-gateway-api.azurewebsites.net/company';
 
   // Hlavičky pre GET požiadavky
   private headers = new HttpHeaders({
@@ -51,5 +53,23 @@ export class DocumentService {
   ): Observable<Document> {
     const url = `${this.baseUrl}/${tenantId}/documents/persons/${personId}/document/${documentId}/open`;
     return this.http.get<Document>(url, { headers: this.headers });
+  }
+
+  approvePersonDocument(
+    tenantId: string,
+    personId: string,
+    documentId: string
+  ): Observable<any> {
+    const url = `${this.baseUrl}/${tenantId}/documents/persons/${personId}/document/${documentId}/approve`;
+    return this.http.post<any>(url, {}, { headers: this.headers });
+  }
+
+  rejectPersonDocument(
+    tenantId: string,
+    personId: string,
+    documentId: string
+  ): Observable<any> {
+    const url = `${this.baseUrl}/${tenantId}/documents/persons/${personId}/document/${documentId}/reject`;
+    return this.http.post<any>(url, {}, { headers: this.headers });
   }
 }
